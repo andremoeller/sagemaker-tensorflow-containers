@@ -47,7 +47,7 @@ diff --git a/tensorflow/core/kernels/data/BUILD b/tensorflow/core/kernels/data/B
 index 1e3b0c231f..9880cc76d3 100644
 --- a/tensorflow/core/kernels/data/BUILD
 +++ b/tensorflow/core/kernels/data/BUILD
-@@ -209,6 +209,19 @@ tf_kernel_library(
+@@ -208,6 +208,19 @@ tf_kernel_library(
      ],
  )
  
@@ -67,14 +67,14 @@ index 1e3b0c231f..9880cc76d3 100644
  tf_kernel_library(
      name = "scan_dataset_op",
      srcs = ["scan_dataset_op.cc"],
-@@ -519,6 +532,7 @@ tf_kernel_library(
+@@ -530,6 +543,7 @@ tf_kernel_library(
          ":dense_to_sparse_batch_dataset_op",
          ":filter_dataset_op",
          ":flat_map_dataset_op",
 +        ":generator_dataset_op",
          ":group_by_window_dataset_op",
+         ":ignore_errors_dataset_op",
          ":interleave_dataset_op",
-         ":iterator_ops",
 diff --git a/tensorflow/core/kernels/data/captured_function.cc b/tensorflow/core/kernels/data/captured_function.cc
 index c4aa9ec265..dd61b7daee 100644
 --- a/tensorflow/core/kernels/data/captured_function.cc
