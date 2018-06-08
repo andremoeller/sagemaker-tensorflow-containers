@@ -1,0 +1,80 @@
+FROM ubuntu:16.04
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        build-essential \
+        curl \
+        git \
+        libcurl3-dev \
+        libfreetype6-dev \
+        libpng12-dev \
+        libzmq3-dev \
+        pkg-config \
+        python-dev \
+        rsync \
+        software-properties-common \
+        unzip
+        zip \
+        zlib1g-dev \
+        openjdk-8-jdk \
+        openjdk-8-jre-headless \
+        wget \
+        vim \
+        iputils-ping \
+        nginx \
+        && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN curl -fSsL -O https://bootstrap.pypa.io/get-pip.py && \
+    python get-pip.py && \
+    rm get-pip.py
+
+RUN pip --no-cache-dir install \
+        numpy \
+        scipy \
+        sklearn \
+        pandas \
+        h5py
+
+WORKDIR /root
+
+RUN pip install numpy boto3 six awscli
+
+ARG framework_installable=tensorflow-1.7.0-cp27-cp27mu-linux_x86_64.whl
+ARG framework_support_installable=sagemaker_tensorflow_container-2.0.0.tar.gz
+
+WORKDIR /
+
+RUN pip install cmake && \
+    git clone https://github.com/01org/mkl-dnn.git && \
+    cd mkl-dnn/scripts && ./prepare_mkl.sh && cd .. && \
+    mkdir -p build && cd build && cmake .. && make && \
+    make install
+
+ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
+
+# Will install from pypi once packages are released there. For now, copy from local file system.
+COPY $framework_installable .
+COPY $framework_support_installable .
+COPY sagemaker-tensorflow-extensions sagemaker-tensorflow-extensions
+
+RUN cd sagemaker-tensorflow-extensions && \
+    pip install . && \
+    cd .. && \
+    rm -rf sagemaker-tensorflow-extensions
+
+RUN pip2 install -U sagemaker-containers==2.0.2
+
+RUN framework_installable_local=$(basename $framework_installable) && \
+    framework_support_installable_local=$(basename $framework_support_installable) && \
+    \
+    pip install -U $framework_installable_local && \
+    pip install -U $framework_support_installable_local && \
+    \
+    rm $framework_installable_local && \
+    rm $framework_support_installable_local
+
+
+
+ENV SAGEMAKER_TRAINING_MODULE sagemaker_tensorflow_container:start_training
+ENV SAGEMAKER_SERVING_MODULE sagemaker_tensorflow_container:start_serving

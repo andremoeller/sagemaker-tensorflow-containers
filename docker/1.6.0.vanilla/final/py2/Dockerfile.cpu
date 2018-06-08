@@ -1,0 +1,20 @@
+FROM tensorflow/tensorflow:1.6.0
+
+MAINTAINER Amazon AI
+
+ARG framework_support_installable=sagemaker_tensorflow_container-2.0.0.tar.gz
+
+WORKDIR /
+
+COPY $framework_support_installable .
+
+RUN pip2 install -U sagemaker-containers==2.0.2
+
+RUN framework_support_installable_local=$(basename $framework_support_installable) && \
+    \
+    pip install -U $framework_support_installable_local && \
+    \
+    rm $framework_support_installable_local
+
+ENV SAGEMAKER_TRAINING_MODULE sagemaker_tensorflow_container:start_training
+ENV SAGEMAKER_SERVING_MODULE sagemaker_tensorflow_container:start_serving

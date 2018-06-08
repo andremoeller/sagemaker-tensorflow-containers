@@ -2,23 +2,27 @@
 FROM tensorflow-base:1.6.0-cpu-py2
 MAINTAINER Amazon AI
 
-ARG framework_installable
-ARG framework_support_installable=sagemaker_tensorflow_container-1.0.0.tar.gz
+ARG framework_installable=tensorflow-1.6.0-cp27-cp27mu-linux_x86_64.whl
+ARG framework_support_installable=sagemaker_tensorflow_container-2.0.0.tar.gz
 
-WORKDIR /root
+WORKDIR /
 
 # Will install from pypi once packages are released there. For now, copy from local file system.
 COPY $framework_installable .
 COPY $framework_support_installable .
 
+RUN pip2 install -U sagemaker-containers==2.0.2
+
+
 RUN framework_installable_local=$(basename $framework_installable) && \
     framework_support_installable_local=$(basename $framework_support_installable) && \
     \
-    pip install $framework_installable_local && \
-    pip install $framework_support_installable_local && \
+    pip install -U $framework_installable_local && \
+    pip install -U $framework_support_installable_local && \
     \
     rm $framework_installable_local && \
     rm $framework_support_installable_local
 
-# entry.py comes from sagemaker-container-support
-ENTRYPOINT ["entry.py"]
+
+ENV SAGEMAKER_TRAINING_MODULE sagemaker_tensorflow_container:start_training
+ENV SAGEMAKER_SERVING_MODULE sagemaker_tensorflow_container:start_serving
