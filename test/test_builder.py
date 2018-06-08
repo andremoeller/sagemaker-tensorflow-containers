@@ -16,7 +16,7 @@ role = 'SageMakerRole'
 train_instance_type = 'ml.c5.9xlarge'
 
 
-@pytest.mark.parametrize('framework_version', ['1.6.0', '1.7.0', '1.8.0'])
+@pytest.mark.parametrize('framework_version', ['1.6.0'])
 def test_build(framework_version):
     estimator = Estimator(name='tensorflow',
                           framework_version=framework_version,
