@@ -154,7 +154,7 @@ for PARAMETER_SERVER in 10 5 4 2 1
 do
     pytest test/integration/benchmarks/criteo/test_criteo.py \
      --sagemaker-role SageMakerRole `# pass in your own SageMaker role` \
-     --dataset-location  s3://sagemaker-us-west-2-369233609183/datasets/criteo-16-tb/criteo_20180605_141913 \
+     --dataset-location  s3://my/bucket/with/criteo/dataset \
      --framework-version 1.7.0 `# available versions: 1.7.0, 1.8.0, 1.7.0.vanilla, 1.8.0.vanilla` \
     --num-parameter-servers ${PARAMETER_SERVER} `# number of parameter servers in the training` \
     --num-instances 10 `# number of training instances`
