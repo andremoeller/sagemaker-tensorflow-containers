@@ -12,7 +12,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         python-dev \
         rsync \
         software-properties-common \
-        unzip
+        unzip \
         zip \
         zlib1g-dev \
         openjdk-8-jdk \
@@ -56,6 +56,11 @@ ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
 # Will install from pypi once packages are released there. For now, copy from local file system.
 COPY $framework_installable .
 COPY $framework_support_installable .
+
+RUN framework_installable_local=$(basename $framework_installable) && \
+    pip install -U $framework_installable_local && \
+    rm $framework_installable_local
+
 COPY sagemaker-tensorflow-extensions sagemaker-tensorflow-extensions
 
 RUN cd sagemaker-tensorflow-extensions && \
@@ -65,13 +70,8 @@ RUN cd sagemaker-tensorflow-extensions && \
 
 RUN pip2 install -U sagemaker-containers==2.0.2
 
-RUN framework_installable_local=$(basename $framework_installable) && \
-    framework_support_installable_local=$(basename $framework_support_installable) && \
-    \
-    pip install -U $framework_installable_local && \
+RUN  framework_support_installable_local=$(basename $framework_support_installable) && \
     pip install -U $framework_support_installable_local && \
-    \
-    rm $framework_installable_local && \
     rm $framework_support_installable_local
 
 

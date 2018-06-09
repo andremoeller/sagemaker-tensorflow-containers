@@ -95,7 +95,7 @@ class Estimator(Framework):
         cmd = 'aws ecr get-login --no-include-email --region us-west-2'.split(' ')
         login = subprocess.check_output(cmd).strip()
 
-        subprocess.check_call(login.split(' '))
+        subprocess.check_call(login.split(' '.encode()))
 
         subprocess.check_call(cmd)
         cmd = 'docker push {}'.format(tag).split(' ')

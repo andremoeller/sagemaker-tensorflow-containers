@@ -318,12 +318,6 @@ def main():
                                       args.transformed_metadata_path,
                                       args.train_data_paths, args.batch_size, args.eval_data_paths)
 
-    config_proto = tf.ConfigProto()
-
-    if os.environ['OMP_NUM_THREADS']:
-        config_proto.intra_op_parallelism_threads = int(os.environ['OMP_NUM_THREADS'])
-        config_proto.inter_op_parallelism_threads = args.inter_op_parallelism_threads
-
     run_config = tf.contrib.learn.RunConfig(session_config=config_proto)
 
     learn_runner.run(experiment_fn=experiment_fn,

@@ -87,7 +87,7 @@ def cluster(current_host_name, hosts, model_dir=None, initial_port=2222):
     if workers:
         _cluster['cluster']['worker'] = workers
 
-    return cluster
+    return _cluster
 
 
 def run_ps_server(current_host, hosts, cluster):
@@ -107,11 +107,23 @@ def run_ps_server(current_host, hosts, cluster):
 
 def start():
     hyperparameters = framework.env.read_hyperparameters()
+
+    checkpoint_path = hyperparameters['checkpoint_path']
+    del hyperparameters['evaluation_steps']
+    del hyperparameters['training_steps']
+    del hyperparameters['checkpoint_path']
+
+    s3_channel = hyperparameters['s3_channel']
+
+    del hyperparameters['s3_channel']
+
     env = framework.training_env(hyperparameters=hyperparameters)
 
     env_vars = env.to_env_vars()
 
-    model_dir = hyperparameters.get('sagemaker_model_dir', env.model_dir)
+    env_vars['S3_CHANNEL'] = s3_channel
+
+    model_dir = hyperparameters.get('checkpoint_path', checkpoint_path)
 
     num_ps = hyperparameters.get('sagemaker_num_parameter_servers', None)
 
@@ -142,7 +154,7 @@ def start():
     env_vars.update(tf_env_vars)
 
     for k, v in hyperparameters.get('sagemaker_env_vars', {}).items():
-        env_vars[k] = v
+        env_vars[k] = json.dumps(v)
 
     framework.modules.run_module_from_s3(env.module_dir,
                                          env.to_cmd_args(),
