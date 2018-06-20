@@ -38,7 +38,7 @@ logger.setLevel(logging.INFO)
 Host = collections.namedtuple('Host', 'name num_master num_worker num_ps')
 
 
-def cluster(current_host_name, hosts, num_parameter_servers, model_dir=None, initial_port=2222):
+def cluster(current_host_name, hosts, model_dir=None, initial_port=2222):
     """Builds a dictionary containing cluster information based on number of hosts and number of
     parameter servers. More information about TF_Config:
 
@@ -50,30 +50,26 @@ def cluster(current_host_name, hosts, num_parameter_servers, model_dir=None, ini
     parameter_servers = []
 
     is_master = any(host.name == current_host_name and host.num_master for host in hosts)
-    host_index = int(current_host_name.split('-')[-1])
 
-    if is_master:
-        task_type = 'master'
-        task_id = 0
-    elif 1 < host_index <= num_parameter_servers + 1:
-        task_type = 'ps'
-        task_id = host_index - 2
-    else:
-        task_type = 'worker'
-        task_id = host_index - 2 - num_parameter_servers
+    task_id = 0
+    for host_id, host in enumerate(hosts):
+        port = initial_port
+        for num, task_type in [(host.num_master, masters),
+                               (host.num_worker, workers),
+                               (host.num_ps, parameter_servers)]:
 
-    task_name = '%s:%d' % ('algo-1', initial_port)
-    masters.append(task_name)
+            for i in range(num):
+                task_name = '%s:%d' % (host.name, port)
+                port += 1
 
-    for i in range(2, num_parameter_servers + 2):
-        task_name = '%s:%d' % ('algo-{}'.format(i), 2223)
-        parameter_servers.append(task_name)
-    for i in range(num_parameter_servers + 2, len(hosts) + 1):
-        task_name = '%s:%d' % ('algo-{}'.format(i), initial_port)
-        workers.append(task_name)
+                task_type.append(task_name)
 
-    logger.info('current host: {}, task id: {}, task type: {}'.format(current_host_name, task_id, task_type))
-    logger.info('masters: {}, param servers: {}, workers: {}'.format(masters, parameter_servers, workers))
+                if is_master:
+                    task_id = 0
+                elif host.name == current_host_name:
+                    task_id = host_id - 1
+
+    task_type = 'master' if is_master else 'worker'
 
     _cluster = {
         'cluster':     {
@@ -94,6 +90,7 @@ def cluster(current_host_name, hosts, num_parameter_servers, model_dir=None, ini
         _cluster['cluster']['worker'] = workers
 
     return _cluster
+
 
 
 def run_ps_server(current_host, hosts, cluster):
@@ -143,6 +140,7 @@ def start():
         logger.info('Running PS')
         run_ps_server(env.current_host, env.hosts, config['cluster'])
 
+
     os.environ['TF_CONFIG'] = json.dumps(config)
 
     tf_env_vars = {
@@ -176,29 +174,34 @@ def default_hosts(current_host, hosts, num_parameters_servers=None):
     if len(hosts) == 1:
         num_ps = num_parameters_servers or 0
         return [Host(name=current_host, num_master=1, num_worker=0, num_ps=num_ps)]
-    if len(hosts) == 2:
-        num_ps = num_parameters_servers or 1
-        return [Host(name=current_host, num_master=1, num_worker=0, num_ps=num_ps),
-                Host(name=current_host, num_master=0, num_worker=1, num_ps=num_ps)]
     else:
         num_hosts = len(hosts)
         num_parameters_servers = num_parameters_servers or num_hosts
 
-        # Each host runs exactly one kind of process: master, worker, or parameter server.
-        assert num_hosts - num_parameters_servers > 2, \
-            "num hosts {} must be at least two greater than num parameter servers {}".format(num_hosts,
-                                                                                             num_parameters_servers)
-        masters = [Host(hosts[0], num_master=1, num_worker=0, num_ps=0)]
-        parameter_servers = []
+        ps_per_host = num_parameters_servers // len(hosts)
+        mod = num_parameters_servers % len(hosts)
+
+        if mod:
+            additional_ps = 1
+            mod -= 1
+        else:
+            additional_ps = 0
+
+        masters = [Host(hosts[0], num_master=1, num_worker=0, num_ps=ps_per_host + additional_ps)]
+
         workers = []
-        for i in range(1, num_parameters_servers + 1):
-            parameter_servers.append(Host(hosts[i], num_master=0, num_worker=0, num_ps=1))
-        for i in range(num_parameters_servers + 1, num_hosts):
-            workers.append(Host(hosts[i], num_master=0, num_worker=1, num_ps=0))
 
-        logger.info('master: {}, parameter_servers: {}, workers: {}'.format(masters, parameter_servers, workers))
+        for host in hosts[1:]:
+            if mod:
+                additional_ps = 1
+                mod -= 1
+            else:
+                additional_ps = 0
 
-        return masters + parameter_servers + workers
+            host_class = Host(host, num_master=0, num_worker=1, num_ps=ps_per_host + additional_ps)
+            workers.append(host_class)
+
+        return masters + workers
 
 
 def tf_config(model_dir, current_host, hosts, num_parameters_servers=None):
@@ -207,8 +210,7 @@ def tf_config(model_dir, current_host, hosts, num_parameters_servers=None):
     is_hostname = isinstance(hosts[0], six.string_types)
     hosts = default_hosts(current_host, hosts, num_parameters_servers) if is_hostname else hosts
 
-    return cluster(current_host_name=current_host, hosts=hosts, num_parameter_servers=num_parameters_servers,
-                   model_dir=model_dir)
+    return cluster(current_host_name=current_host, hosts=hosts, model_dir=model_dir)
 
 def _wait_until_master_is_down(master):
     while True:

@@ -108,7 +108,7 @@ def create_parser():
         nargs='*',
         help='List of hidden units per layer. All layers are fully connected. Ex.'
              '`64 32` means first layer has 64 nodes and second one has 32.',
-        default=[512],
+        default=[32],
         type=int)
 
     parser.add_argument(
@@ -131,7 +131,7 @@ def create_parser():
 
     parser.add_argument(
         '--train_steps',
-        default=0,
+        default=100,
         type=int)
 
     parser.add_argument(
@@ -144,7 +144,7 @@ def create_parser():
 
     parser.add_argument('--l2_regularization', help='L2 Regularization', type=int)
 
-    parser.add_argument('--num_epochs', help='Number of epochs', default=5, type=int)
+    parser.add_argument('--num_epochs', help='Number of epochs', default=1, type=int)
 
     parser.add_argument('--inter_op_parallelism_threads', type=int)
 
@@ -321,8 +321,16 @@ def main():
 
     run_config = tf.contrib.learn.RunConfig(session_config=config_proto)
 
-    learn_runner.run(experiment_fn=experiment_fn,
-                     run_config=run_config)
+    print('run config task type: {}'.format(run_config.task_type))
+
+    if run_config.task_type == 'ps':
+        print('run_config task type is ps. running as worker.')
+        learn_runner.run(experiment_fn=experiment_fn,
+                         run_config=run_config,
+                         schedule='train')
+    else:
+        learn_runner.run(experiment_fn=experiment_fn,
+                         run_config=run_config)
     import time
     print('time to make training longer')
     time.sleep(60)
