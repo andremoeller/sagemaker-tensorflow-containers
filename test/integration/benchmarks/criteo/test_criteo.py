@@ -5,6 +5,8 @@ import os
 from sagemaker import Session
 from sagemaker.tensorflow import TensorFlow
 
+from sagemaker.session import s3_input
+
 default_bucket = Session().default_bucket
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
@@ -53,7 +55,11 @@ def test_benchmark(framework_version, instance_type, placeholder_bucket, dataset
                     hyperparameters=hyperparameters)
 
     # This points to the prototype images.
-    tf.train_image = lambda: '520713654638.dkr.ecr.%s.amazonaws.com/sagemaker-tensorflow:' \
-                             '%s-cpu-py2-script-mode-preview' % (region, framework_version)
+    #tf.train_image = lambda: '520713654638.dkr.ecr.%s.amazonaws.com/sagemaker-tensorflow:' \
+    #                         '%s-cpu-py2-script-mode-preview' % (region, framework_version)
+
+    tf.train_image = lambda: '038453126632.dkr.ecr.us-west-2.amazonaws.com/sagemaker-tensorflow:1.7.0-cpu-py2'
+
+    #gzip_input = s3_input(placeholder_bucket, compression='Gzip')
 
     tf.fit({'training': placeholder_bucket}, wait=wait)

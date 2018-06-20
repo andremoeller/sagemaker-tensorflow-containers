@@ -266,6 +266,7 @@ def get_transformed_reader_input_fn(transformed_metadata,
                                     batch_size,
                                     mode):
     """Wrap the get input features function to provide the runtime arguments."""
+    # https://github.com/tensorflow/transform/blob/master/tensorflow_transform/saved/input_fn_maker.py#L548
     return input_fn_maker.build_training_input_fn(
         metadata=transformed_metadata,
         file_pattern=(
@@ -322,7 +323,6 @@ def main():
 
     learn_runner.run(experiment_fn=experiment_fn,
                      run_config=run_config)
-
 
 if __name__ == '__main__':
     main()

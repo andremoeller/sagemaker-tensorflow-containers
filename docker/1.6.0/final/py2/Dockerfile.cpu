@@ -26,3 +26,4 @@ RUN framework_installable_local=$(basename $framework_installable) && \
 
 ENV SAGEMAKER_TRAINING_MODULE sagemaker_tensorflow_container:start_training
 ENV SAGEMAKER_SERVING_MODULE sagemaker_tensorflow_container:start_serving
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1​
