@@ -323,6 +323,10 @@ def main():
 
     learn_runner.run(experiment_fn=experiment_fn,
                      run_config=run_config)
+    import time
+    print('time to make training longer')
+    time.sleep(60)
+    print('time to make training longer')
 
 if __name__ == '__main__':
     main()

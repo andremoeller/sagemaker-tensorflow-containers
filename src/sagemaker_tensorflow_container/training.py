@@ -16,6 +16,8 @@ import collections
 import json
 import logging
 import os
+import subprocess
+import time
 from threading import Thread
 
 import six
@@ -135,6 +137,12 @@ def start():
 
     # TODO(mvs): create an object instead of reading from the dict
 
+    # How to avoid running two parameter servers?
+    # Problem is that customer code starts parameter server, worker, etc., right?
+    if any(ps.startswith(env.current_host) for ps in config['cluster'].get('ps', [])):
+        logger.info('Running PS')
+        run_ps_server(env.current_host, env.hosts, config['cluster'])
+
     os.environ['TF_CONFIG'] = json.dumps(config)
 
     tf_env_vars = {
@@ -160,6 +168,8 @@ def start():
                                          env.to_cmd_args(),
                                          env_vars,
                                          env.module_name)
+    _wait_until_master_is_down('algo-1')
+
 
 
 def default_hosts(current_host, hosts, num_parameters_servers=None):
@@ -199,3 +209,13 @@ def tf_config(model_dir, current_host, hosts, num_parameters_servers=None):
 
     return cluster(current_host_name=current_host, hosts=hosts, num_parameter_servers=num_parameters_servers,
                    model_dir=model_dir)
+
+def _wait_until_master_is_down(master):
+    while True:
+        try:
+            # this subprocess call is python 2/3 compatible and will throw an exception when the status code is != 0
+            subprocess.check_call(['curl', '{}:2222'.format(master)], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            time.sleep(10)
+        except subprocess.CalledProcessError:
+            logger.info("master {} is down".format(master))
+            return
