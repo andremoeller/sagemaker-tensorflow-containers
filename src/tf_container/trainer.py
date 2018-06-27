@@ -76,11 +76,11 @@ class Trainer(object):
         logger.info('model path: {}'.format(self.model_path))
         with tf.contrib.tfprof.ProfileContext(
                 os.path.join(self.model_path, 'profile_results'),
-                trace_steps=range(0, 200, 2),
-                dump_steps=range(0, 200, 2)) as pctx:
-            pctx.add_auto_profiling('op', opts, range(0, 200, 2))
+                trace_steps=range(1, 1000, 20),
+                dump_steps=range(1, 1000, 20)) as pctx:
+            pctx.add_auto_profiling('op', opts, range(1, 1000, 20))
             # Train model.
-            pctx.add_auto_profiling('scope', opts2, range(0, 3))
+            pctx.add_auto_profiling('scope', opts2, range(0, 20))
             tf.estimator.train_and_evaluate(estimator=estimator, train_spec=train_spec, eval_spec=eval_spec)
 
 
