@@ -70,7 +70,19 @@ class Trainer(object):
         train_spec = self._build_train_spec()
         eval_spec = self._build_eval_spec()
 
-        tf.estimator.train_and_evaluate(estimator=estimator, train_spec=train_spec, eval_spec=eval_spec)
+        builder = tf.profiler.ProfileOptionBuilder
+        opts = builder(builder.time_and_memory()).order_by('micros').build()
+        opts2 = tf.profiler.ProfileOptionBuilder.trainable_variables_parameter()
+        logger.info('model path: {}'.format(self.model_path))
+        with tf.contrib.tfprof.ProfileContext(
+                os.path.join(self.model_path, 'profile_results'),
+                trace_steps=range(0, 200, 2),
+                dump_steps=range(0, 200, 2)) as pctx:
+            pctx.add_auto_profiling('op', opts, range(0, 200, 2))
+            # Train model.
+            pctx.add_auto_profiling('scope', opts2, range(0, 3))
+            tf.estimator.train_and_evaluate(estimator=estimator, train_spec=train_spec, eval_spec=eval_spec)
+
 
     def _build_run_config(self):
         valid_runconfig_keys = ['save_summary_steps', 'save_checkpoints_secs', 'save_checkpoints_steps',

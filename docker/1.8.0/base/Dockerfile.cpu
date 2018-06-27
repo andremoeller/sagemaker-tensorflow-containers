@@ -52,3 +52,4 @@ RUN wget "http://storage.googleapis.com/tensorflow-serving-apt/pool/tensorflow-m
 RUN add-apt-repository ppa:ubuntu-toolchain-r/test -y && \
     apt-get update && \
     apt-get install -y libstdc++6
+
