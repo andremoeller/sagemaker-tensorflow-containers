@@ -70,17 +70,31 @@ class Trainer(object):
         train_spec = self._build_train_spec()
         eval_spec = self._build_eval_spec()
 
-        builder = tf.profiler.ProfileOptionBuilder
-        opts = builder(builder.time_and_memory()).order_by('micros').build()
-        opts2 = tf.profiler.ProfileOptionBuilder.trainable_variables_parameter()
-        logger.info('model path: {}'.format(self.model_path))
-        with tf.contrib.tfprof.ProfileContext(
-                os.path.join(self.model_path, 'profile_results'),
-                trace_steps=range(1, 1000, 20),
-                dump_steps=range(1, 1000, 20)) as pctx:
-            pctx.add_auto_profiling('op', opts, range(1, 1000, 20))
-            # Train model.
-            pctx.add_auto_profiling('scope', opts2, range(0, 20))
+        if 'use_profiler' in self.customer_params and self.customer_params['use_profiler']:
+            start_step = int(self.customer_params.get('start_step', 1))
+            end_step = int(self.customer_params.get('end_step', 1000))
+            end_step_list = self.customer_params.get('end_step_list', [end_step])
+
+            step_size = int(self.customer_params.get('step_size', 20))
+            steps = range(start_step, end_step, step_size)
+
+            # should be a list
+            auto_profiling_steps_op = self.customer_params.get('auto_profiling_steps_op', steps)
+            auto_profiling_steps_scope = self.customer_params.get('auto_profiling_steps_op', steps)
+
+            builder = tf.profiler.ProfileOptionBuilder
+            opts = builder(builder.time_and_memory()).order_by('micros').build()
+            opts2 = tf.profiler.ProfileOptionBuilder.trainable_variables_parameter()
+            logger.info('model path: {}'.format(self.model_path))
+            with tf.contrib.tfprof.ProfileContext(
+                    os.path.join(self.model_path, 'profile_results'),
+                    trace_steps=steps,
+                    dump_steps=end_step_list) as pctx:
+                pctx.add_auto_profiling('op', opts, auto_profiling_steps_op)
+                # Train model.
+                pctx.add_auto_profiling('scope', opts2, auto_profiling_steps_scope)
+                tf.estimator.train_and_evaluate(estimator=estimator, train_spec=train_spec, eval_spec=eval_spec)
+        else:
             tf.estimator.train_and_evaluate(estimator=estimator, train_spec=train_spec, eval_spec=eval_spec)
 
 
